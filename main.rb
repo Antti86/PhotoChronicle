@@ -1,6 +1,28 @@
 require 'date'
 require 'fileutils'
 
+def siirra_tiedosto(tiedosto, kohdekansio, testi_ajo)
+  return if testi_ajo
+
+  FileUtils.mkdir_p(kohdekansio)
+
+  kohdepolku = File.join(kohdekansio, tiedosto)
+  if File.exist?(kohdepolku)
+    base = File.basename(tiedosto, ".*")
+    ext = File.extname(tiedosto)
+    uusi_nimi = "#{base}_#{Time.now.to_i}#{ext}"
+    kohdepolku = File.join(kohdekansio, uusi_nimi)
+  end
+
+  FileUtils.mv(tiedosto, kohdepolku)
+end
+
+def tulosta_tiedosto_nimet(tiedostot, tulosta_kaikki_tiedostot)
+  return unless tulosta_kaikki_tiedostot
+  tiedostot.each { |t| puts "    #{t}" }
+end
+
+
 testi_ajo = false
 tulosta_kaikki_tiedostot = false
 
@@ -26,25 +48,10 @@ tiedostot_per_vuosi_kk.each do |vuosi, kk_hash|
   vuoden_tiedostot = kk_hash.values.flatten
   if vuoden_tiedostot.size < 10
     puts "  (alle 10 tiedostoa – sijoitetaan suoraan #{vuosi}/ kansioon)"
-    unless testi_ajo
-      FileUtils.mkdir_p(vuosi.to_s)
       vuoden_tiedostot.each do |tiedosto|
-        kohdepolku = File.join(vuosi.to_s, tiedosto)
-        if File.exist?(kohdepolku)
-          base = File.basename(tiedosto, ".*")
-          ext = File.extname(tiedosto)
-          uusi_nimi = "#{base}_#{Time.now.to_i}#{ext}" 
-          kohdepolku = File.join(vuosi.to_s, uusi_nimi)
-        end
-        FileUtils.mv(tiedosto, kohdepolku)
+        siirra_tiedosto(tiedosto, vuosi.to_s, testi_ajo)
       end
-    end
-
-    if tulosta_kaikki_tiedostot
-      vuoden_tiedostot.each do |tiedosto|
-        puts "    #{tiedosto}"
-      end
-    end
+    tulosta_tiedosto_nimet(vuoden_tiedostot, tulosta_kaikki_tiedostot)
     next
   end
 
@@ -62,44 +69,18 @@ tiedostot_per_vuosi_kk.each do |vuosi, kk_hash|
   
     if kaikki_tiedostot.size < 15
       puts "  #{kvartaali[i]}: #{kaikki_tiedostot.size} tiedostoa (→ yhdistetty kansio)"
-      if tulosta_kaikki_tiedostot
-        kaikki_tiedostot.each { |t| puts "    #{t}" }
+      tulosta_tiedosto_nimet(kaikki_tiedostot, tulosta_kaikki_tiedostot)
+      kaikki_tiedostot.each do |tiedosto|
+        siirra_tiedosto(tiedosto, File.join(vuosi.to_s, kvartaali[i]), testi_ajo)
       end
-      unless testi_ajo
-        FileUtils.mkdir_p(File.join(vuosi.to_s, kvartaali[i]))
-        kaikki_tiedostot.each do |tiedosto|
-          kohdepolku = File.join(vuosi.to_s, kvartaali[i], tiedosto)
-          if File.exist?(kohdepolku)
-            base = File.basename(tiedosto, ".*")
-            ext = File.extname(tiedosto)
-            uusi_nimi = "#{base}_#{Time.now.to_i}#{ext}" 
-            kohdepolku = File.join(vuosi.to_s, kvartaali[i], uusi_nimi)
-          end
-          FileUtils.mv(tiedosto, kohdepolku)
-        end
-
-      end
-
     else
       ryhma.each do |kk|
         tiedostot = kk_hash[kk]
         next if tiedostot.empty?
         puts "  #{kuukaudet_nimi[kk - 1]}: #{tiedostot.size} tiedostoa"
-        if tulosta_kaikki_tiedostot
-          tiedostot.each { |t| puts "    #{t}" }
-        end
-        unless testi_ajo
-          FileUtils.mkdir_p(File.join(vuosi.to_s, kuukaudet_nimi[kk - 1]))
-          tiedostot.each do |tiedosto|
-            kohdepolku = File.join(vuosi.to_s, kuukaudet_nimi[kk - 1], tiedosto)
-            if File.exist?(kohdepolku)
-              base = File.basename(tiedosto, ".*")
-              ext = File.extname(tiedosto)
-              uusi_nimi = "#{base}_#{Time.now.to_i}#{ext}"
-              kohdepolku = File.join(vuosi.to_s, kuukaudet_nimi[kk - 1], uusi_nimi)
-            end
-            FileUtils.mv(tiedosto, kohdepolku)
-          end
+        tulosta_tiedosto_nimet(tiedostot, tulosta_kaikki_tiedostot)
+        tiedostot.each do |tiedosto|
+          siirra_tiedosto(tiedosto, File.join(vuosi.to_s, kuukaudet_nimi[kk - 1]), testi_ajo)
         end
       end
     end
