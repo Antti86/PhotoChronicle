@@ -25,10 +25,10 @@ end
 dry_run = false
 print_all_files = false
 
-month_names = ["Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu", "Toukokuu", "Kesäkuu",
-               "Heinäkuu", "Elokuu", "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu"]
+month_names = ["January", "February", "March", "April", "May", "June",
+               "July", "August", "September", "October", "November", "December"]
 
-quarter_names = ["Tammikuu-Maaliskuu", "Huhtikuu-Kesäkuu", "Heinäkuu-Syyskuu", "Lokakuu-Joulukuu"]
+quarter_names = ["January-March", "April-June", "July-September", "October-December"]
 files_per_year_month = Hash.new { |h, y| h[y] = Hash.new { |k, m| k[m] = [] } }
 
 # Get all files from the script directory, excluding the script itself.
@@ -41,11 +41,11 @@ Dir.glob("*").select { |f| File.file?(f) && f != script_name }.each do |file|
 end
 
 files_per_year_month.each do |year, month_hash|
-  puts "Vuosi #{year}:"
+  puts "Year #{year}:"
 
   yearly_files = month_hash.values.flatten
   if yearly_files.size < 10
-    puts "  (alle 10 tiedostoa – sijoitetaan suoraan #{year}/ kansioon)"
+    puts "  (Less than 10 files – placing directly into #{year}/ folder)"
     yearly_files.each do |file|
       move_file(file, year.to_s, dry_run)
     end
@@ -61,13 +61,13 @@ files_per_year_month.each do |year, month_hash|
   }
 
   quarter_map.each do |i, months|
-    group = months & month_hash.keys  # Only months that are present in the data
+    group = months & month_hash.keys
     next if group.empty?
 
     all_files = group.flat_map { |m| month_hash[m] }
 
     if all_files.size < 15
-      puts "  #{quarter_names[i]}: #{all_files.size} tiedostoa (→ yhdistetty kansio)"
+      puts "  #{quarter_names[i]}: #{all_files.size} files (→ merged into one folder)"
       print_file_names(all_files, print_all_files)
       all_files.each do |file|
         move_file(file, File.join(year.to_s, quarter_names[i]), dry_run)
@@ -76,7 +76,7 @@ files_per_year_month.each do |year, month_hash|
       group.each do |month|
         files = month_hash[month]
         next if files.empty?
-        puts "  #{month_names[month - 1]}: #{files.size} tiedostoa"
+        puts "  #{month_names[month - 1]}: #{files.size} files"
         print_file_names(files, print_all_files)
         files.each do |file|
           move_file(file, File.join(year.to_s, month_names[month - 1]), dry_run)
