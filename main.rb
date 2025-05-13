@@ -1,90 +1,87 @@
 require 'date'
 require 'fileutils'
 
-def siirra_tiedosto(tiedosto, kohdekansio, testi_ajo)
-  return if testi_ajo
+def move_file(file, target_folder, dry_run)
+  return if dry_run
 
-  FileUtils.mkdir_p(kohdekansio)
+  FileUtils.mkdir_p(target_folder)
 
-  kohdepolku = File.join(kohdekansio, tiedosto)
-  if File.exist?(kohdepolku)
-    base = File.basename(tiedosto, ".*")
-    ext = File.extname(tiedosto)
-    uusi_nimi = "#{base}_#{Time.now.to_i}#{ext}"
-    kohdepolku = File.join(kohdekansio, uusi_nimi)
+  destination = File.join(target_folder, file)
+  if File.exist?(destination)
+    base = File.basename(file, ".*")
+    ext = File.extname(file)
+    new_name = "#{base}_#{Time.now.to_i}#{ext}"
+    destination = File.join(target_folder, new_name)
   end
 
-  FileUtils.mv(tiedosto, kohdepolku)
+  FileUtils.mv(file, destination)
 end
 
-def tulosta_tiedosto_nimet(tiedostot, tulosta_kaikki_tiedostot)
-  return unless tulosta_kaikki_tiedostot
-  tiedostot.each { |t| puts "    #{t}" }
+def print_file_names(files, print_all)
+  return unless print_all
+  files.each { |f| puts "    #{f}" }
 end
 
+dry_run = false
+print_all_files = false
 
-testi_ajo = false
-tulosta_kaikki_tiedostot = false
+month_names = ["Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu", "Toukokuu", "Kesäkuu",
+               "Heinäkuu", "Elokuu", "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu"]
 
-kuukaudet_nimi = ["Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu", "Toukokuu", "Kesäkuu",
-                 "Heinäkuu", "Elokuu", "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu"]
+quarter_names = ["Tammikuu-Maaliskuu", "Huhtikuu-Kesäkuu", "Heinäkuu-Syyskuu", "Lokakuu-Joulukuu"]
+files_per_year_month = Hash.new { |h, y| h[y] = Hash.new { |k, m| k[m] = [] } }
 
-kvartaali = ["Tammikuu-Maaliskuu", "Huhtikuu-Kesäkuu", "Heinäkuu-Syyskuu", "Lokakuu-Joulukuu"]
-tiedostot_per_vuosi_kk = Hash.new { |h, y| h[y] = Hash.new { |k, m| k[m] = [] } }
-
-#Hakee kaikki tiedostot skripti kansiosta.
-skriptin_nimi = File.basename($0)
-Dir.glob("*").select { |f| File.file?(f) && f != skriptin_nimi }.each do |tiedosto|
-  aika = File.mtime(tiedosto)
-  vuosi = aika.year
-  kuukausi = aika.month
-  tiedostot_per_vuosi_kk[vuosi][kuukausi] << tiedosto
+# Get all files from the script directory, excluding the script itself.
+script_name = File.basename($0)
+Dir.glob("*").select { |f| File.file?(f) && f != script_name }.each do |file|
+  time = File.mtime(file)
+  year = time.year
+  month = time.month
+  files_per_year_month[year][month] << file
 end
 
-tiedostot_per_vuosi_kk.each do |vuosi, kk_hash|
-  puts "Vuosi #{vuosi}:"
-  
-  # Lasketaan koko vuoden tiedostojen määrä
-  vuoden_tiedostot = kk_hash.values.flatten
-  if vuoden_tiedostot.size < 10
-    puts "  (alle 10 tiedostoa – sijoitetaan suoraan #{vuosi}/ kansioon)"
-      vuoden_tiedostot.each do |tiedosto|
-        siirra_tiedosto(tiedosto, vuosi.to_s, testi_ajo)
-      end
-    tulosta_tiedosto_nimet(vuoden_tiedostot, tulosta_kaikki_tiedostot)
+files_per_year_month.each do |year, month_hash|
+  puts "Vuosi #{year}:"
+
+  yearly_files = month_hash.values.flatten
+  if yearly_files.size < 10
+    puts "  (alle 10 tiedostoa – sijoitetaan suoraan #{year}/ kansioon)"
+    yearly_files.each do |file|
+      move_file(file, year.to_s, dry_run)
+    end
+    print_file_names(yearly_files, print_all_files)
     next
   end
 
-  kvartaali_map = {
+  quarter_map = {
     0 => (1..3).to_a,
     1 => (4..6).to_a,
     2 => (7..9).to_a,
     3 => (10..12).to_a
   }
-  kvartaali_map.each do |i, kuukaudet|
-    ryhma = kuukaudet & kk_hash.keys  # Vain ne kuukaudet, joita on datassa
-    next if ryhma.empty?
-  
-    kaikki_tiedostot = ryhma.flat_map { |kk| kk_hash[kk] }
-  
-    if kaikki_tiedostot.size < 15
-      puts "  #{kvartaali[i]}: #{kaikki_tiedostot.size} tiedostoa (→ yhdistetty kansio)"
-      tulosta_tiedosto_nimet(kaikki_tiedostot, tulosta_kaikki_tiedostot)
-      kaikki_tiedostot.each do |tiedosto|
-        siirra_tiedosto(tiedosto, File.join(vuosi.to_s, kvartaali[i]), testi_ajo)
+
+  quarter_map.each do |i, months|
+    group = months & month_hash.keys  # Only months that are present in the data
+    next if group.empty?
+
+    all_files = group.flat_map { |m| month_hash[m] }
+
+    if all_files.size < 15
+      puts "  #{quarter_names[i]}: #{all_files.size} tiedostoa (→ yhdistetty kansio)"
+      print_file_names(all_files, print_all_files)
+      all_files.each do |file|
+        move_file(file, File.join(year.to_s, quarter_names[i]), dry_run)
       end
     else
-      ryhma.each do |kk|
-        tiedostot = kk_hash[kk]
-        next if tiedostot.empty?
-        puts "  #{kuukaudet_nimi[kk - 1]}: #{tiedostot.size} tiedostoa"
-        tulosta_tiedosto_nimet(tiedostot, tulosta_kaikki_tiedostot)
-        tiedostot.each do |tiedosto|
-          siirra_tiedosto(tiedosto, File.join(vuosi.to_s, kuukaudet_nimi[kk - 1]), testi_ajo)
+      group.each do |month|
+        files = month_hash[month]
+        next if files.empty?
+        puts "  #{month_names[month - 1]}: #{files.size} tiedostoa"
+        print_file_names(files, print_all_files)
+        files.each do |file|
+          move_file(file, File.join(year.to_s, month_names[month - 1]), dry_run)
         end
       end
     end
-  end  
+  end
 end
-
-
