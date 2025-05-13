@@ -1,0 +1,37 @@
+# Ruby
+*.gem
+*.rbc
+.bundle
+.config
+.yardoc
+_yardoc
+/coverage/
+/spec/reports/
+/test/tmp/
+/test/version_tmp/
+/tmp/
+log/
+/log/*
+!/log/.keep
+db/*.sqlite3
+db/*.sqlite3-journal
+/public/system/*
+/public/uploads
+.byebug_history
+
+# VS Code
+.vscode/
+
+# OS X
+.DS_Store
+
+# Linux
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Package managers
+node_modules/
