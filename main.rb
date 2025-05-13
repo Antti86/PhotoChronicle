@@ -1,12 +1,17 @@
 require 'date'
 require 'fileutils'
+require 'set'
 
-def move_file(file, target_folder, dry_run)
+def move_file(file, target_folder, dry_run, summary)
   return if dry_run
 
-  FileUtils.mkdir_p(target_folder)
+  unless Dir.exist?(target_folder)
+    FileUtils.mkdir_p(target_folder)
+    summary[:folders_created] << target_folder
+  end
 
   destination = File.join(target_folder, file)
+  # If the file wiht same name exists, create new filename with time stamp
   if File.exist?(destination)
     base = File.basename(file, ".*")
     ext = File.extname(file)
@@ -15,6 +20,7 @@ def move_file(file, target_folder, dry_run)
   end
 
   FileUtils.mv(file, destination)
+  summary[:files_moved] += 1
 end
 
 def print_file_names(files, print_all)
@@ -29,16 +35,31 @@ month_names = ["Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu", "Toukokuu", "Kes
                "Heinäkuu", "Elokuu", "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu"]
 
 quarter_names = ["Tammikuu-Maaliskuu", "Huhtikuu-Kesäkuu", "Heinäkuu-Syyskuu", "Lokakuu-Joulukuu"]
+
+summary = {
+  files_moved: 0,
+  folders_created: Set.new
+}
+
 files_per_year_month = Hash.new { |h, y| h[y] = Hash.new { |k, m| k[m] = [] } }
 
-# Get all files from the script directory, excluding the script itself.
+# Get all files from the script directory, excluding the script itself and target folders
 script_name = File.basename($0)
-Dir.glob("*").select { |f| File.file?(f) && f != script_name }.each do |file|
-  time = File.mtime(file)
-  year = time.year
-  month = time.month
-  files_per_year_month[year][month] << file
-end
+excluded_paths = [script_name, ".git", ".gitignore", ".vscode"]
+
+Dir.glob("**/*", File::FNM_DOTMATCH)
+   .select do |f|
+     File.file?(f) &&
+     !excluded_paths.any? { |e| f.start_with?(e) } &&
+     f !~ %r{^\d{4}/}  # skip files already inside year-named folders
+   end
+   .each do |file|
+     time = File.mtime(file)
+     year = time.year
+     month = time.month
+     files_per_year_month[year][month] << file
+   end
+
 
 files_per_year_month.each do |year, month_hash|
   puts "Vuosi #{year}:"
@@ -47,7 +68,7 @@ files_per_year_month.each do |year, month_hash|
   if yearly_files.size < 10
     puts "  (alle 10 tiedostoa – sijoitetaan suoraan #{year}/ kansioon)"
     yearly_files.each do |file|
-      move_file(file, year.to_s, dry_run)
+      move_file(file, year.to_s, dry_run, summary)
     end
     print_file_names(yearly_files, print_all_files)
     next
@@ -70,7 +91,7 @@ files_per_year_month.each do |year, month_hash|
       puts "  #{quarter_names[i]}: #{all_files.size} tiedostoa (→ yhdistetty kansio)"
       print_file_names(all_files, print_all_files)
       all_files.each do |file|
-        move_file(file, File.join(year.to_s, quarter_names[i]), dry_run)
+        move_file(file, File.join(year.to_s, quarter_names[i]), dry_run, summary)
       end
     else
       group.each do |month|
@@ -79,9 +100,13 @@ files_per_year_month.each do |year, month_hash|
         puts "  #{month_names[month - 1]}: #{files.size} tiedostoa"
         print_file_names(files, print_all_files)
         files.each do |file|
-          move_file(file, File.join(year.to_s, month_names[month - 1]), dry_run)
+          move_file(file, File.join(year.to_s, month_names[month - 1]), dry_run, summary)
         end
       end
     end
   end
 end
+
+puts "\nYhteenveto:"
+puts "Siirrettyjä tiedostoja: #{summary[:files_moved]}"
+puts "Luotuja kansioita: #{summary[:folders_created].size}"
