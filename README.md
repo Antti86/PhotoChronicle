@@ -2,18 +2,31 @@
 
 PhotoChronicle on komentoriviltä ajettava Ruby-skripti, joka järjestelee tiedostot (esimerkiksi valokuvat) automaattisesti kansioihin tiedostojen muokkausajankohdan perusteella. Tiedostot ryhmitellään ensin vuosikansioihin, ja tarpeen mukaan kuukauden tai kvartaalin mukaan nimettyihin alikansioihin.
 
-**Huom:** Windows-versio julkaistaan erikseen erillisenä .exe-pakettina. Se ei vaadi Ruby-asennusta.
+**Huom:** Windows-versio on saatavilla erillisenä .exe-pakettina (löytyy GitHubin *Releases*-osiosta). Se ei vaadi Ruby-asennusta.
 ## ☑️ Pääominaisuudet
 
-* Toimii kaikille tiedostotyypeille (ei rajoitu kuviin)
+* Toimii kaikille tiedostotyypeille, mutta `.exe`-tiedostot jätetään käsittelemättä
 * Ryhmittely vuosien ja kuukausien mukaan
 * Kvartaaliyhdistely: jos kvartaalissa < 15 tiedostoa, ne yhdistetään samaan kansioon
 * Jos vuodessa on < 10 tiedostoa, tiedostot sijoitetaan suoraan vuosikansioon ilman alikansioita
 * Tukee alikansioiden skannausta
 * Siirtojen yhteenveto ajon lopuksi
 * Tiedostonimien konfliktit vältetään automaattisesti (lisätään timestamp)
+  
 
-## 🚀 Asennus ja käyttö (Linux)
+## 💻 Käyttö Windowsilla
+
+1. Lataa `PhotoChronicle.exe` [Releases-sivulta](https://github.com/Antti86/PhotoChronicle/releases).
+2. Kopioi `.exe`-tiedosto siihen kansioon, jonka tiedostot haluat järjestellä.
+3. Käynnistä ohjelma kaksoisklikkaamalla tai komentoriviltä:
+
+   ```powershell
+   .\PhotoChronicle.exe
+4. Tiedostot siirtyvät automaattisesti alikansioihin (vuosi/kuukausi), ja ajon lopuksi näytetään yhteenveto.
+Huom: Itse PhotoChronicle.exe-tiedosto ei siirry mukana, mutta muut mahdolliset tiedostotyypit (kuten .dll) siirtyvät, ellei niitä erikseen estetty.
+
+
+## 🚀 Käyttö Linuxilla
 
 1. Varmista, että järjestelmässäsi on Ruby asennettuna:
 
@@ -34,7 +47,8 @@ PhotoChronicle on komentoriviltä ajettava Ruby-skripti, joka järjestelee tiedo
    cd PhotoChronicle
    ```
 
-3. Siirrä tai kopioi kaikki järjesteltävät tiedostot projektikansion juureen. Varmista että juuri kansiossa ei ole ohjelmia tai muita tiedostoja, mitä ei haluta järjestellä. Skripti ei suodata tällä hetkellä .exe tiedostoja.
+3. Siirrä tai kopioi kaikki järjesteltävät tiedostot projektikansion juureen. Varmista, ettei kansiossa ole ohjelmatiedostoja tai muuta, mitä ei haluta järjesteltäväksi.
+.exe-tiedostot ohitetaan automaattisesti, mutta esimerkiksi .dll-tiedostot siirtyvät mukaan.
 
 4. Aja skripti:
 
@@ -67,15 +81,16 @@ print_all_files = true # jos true, tulostaa kaikki siirrettävät tiedostot
 Skripti ohittaa automaattisesti seuraavat:
 
 * Itse skriptitiedoston (`PhotoChronicle.rb`)
+* .exe-tiedostot
 * .git/, .vscode/, .gitignore
 * Kansiot, joiden nimi on nelinumeroinen vuosiluku (esim. `2023/`)
 
-## 🔄 Tulevia parannuksia (roadmap)
+## 🔄 Mahdollisia tulevia parannuksia
 
 * Tuettujen tiedostotyyppien suodatus parametrillisesti
 * Kynnysarvon määritys komentoriviltä (esim. tiedostojen määrä per kvartaalikansio)
 * Undo-toiminto tai lokitiedosto
-
+* Englanninkielinen versio
 ---
 
 
